@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>매출 대시보드 2026</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --hover: rgba(11,11,11,0.04);
+    --chip-on: #0b0b0b;
+    --chip-on-ink: #ffffff;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+    --bar: #2a78d6;
+    --shadow: 0 6px 24px rgba(0,0,0,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --hover: rgba(255,255,255,0.05);
+      --chip-on: #f0efec; --chip-on-ink: #0b0b0b;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+      --bar: #3987e5; --shadow: 0 6px 24px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --hover: rgba(255,255,255,0.05);
+    --chip-on: #f0efec; --chip-on-ink: #0b0b0b;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    --bar: #3987e5; --shadow: 0 6px 24px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .meta { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+  .header-actions { display: flex; gap: 8px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 15px; margin: 0; }
+  .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .hint { color: var(--muted); font-size: 12px; }
+
+  /* filters */
+  .filters { display: grid; gap: 10px; margin-bottom: 16px; }
+  .frow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .flabel { width: 44px; flex: none; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+  .chip {
+    appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip:hover { background: var(--hover); }
+  .chip[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); border-color: var(--chip-on); }
+  .chip:focus-visible, .btn:focus-visible, .seg button:focus-visible, .hrow:focus-visible { outline: 2px solid var(--bar); outline-offset: 2px; }
+  .btn {
+    appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .btn:hover { background: var(--hover); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .seg button { appearance: none; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+  .summary { color: var(--ink-2); font-size: 13px; }
+  .summary b { color: var(--ink); font-weight: 600; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi .label { color: var(--ink-2); font-size: 13px; }
+  .kpi .value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 4px; white-space: nowrap; }
+  .kpi .value small { font-size: 15px; font-weight: 500; color: var(--ink-2); margin-left: 2px; }
+  .kpi .sub { color: var(--muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+
+  /* monthly chart */
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+  #monthChart { width: 100%; }
+  #monthChart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  #monthChart .hit { cursor: pointer; }
+  .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  /* horizontal bars */
+  .hbars { display: grid; gap: 2px; }
+  .hrow {
+    display: grid; grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    appearance: none; border: 0; background: transparent; color: inherit; font: inherit; text-align: left;
+    padding: 7px 6px; border-radius: 8px; cursor: pointer; width: 100%;
+  }
+  .hrow:hover { background: var(--hover); }
+  .hrow .name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hrow .track { height: 14px; position: relative; }
+  .hrow .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; transition: width .25s ease; }
+  .hrow .val { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; min-width: 92px; }
+  .hrow .val .pct { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .hrow.off { opacity: .35; }
+  .hrow.on .name { font-weight: 650; }
+
+  /* tables */
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); }
+  tfoot td, td.total { font-weight: 650; }
+  tfoot td { border-bottom: 0; border-top: 1px solid var(--axis); }
+  td.zero { color: var(--muted); }
+
+  #tip {
+    position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); padding: 10px 12px;
+    font-size: 12px; min-width: 180px; opacity: 0; transition: opacity .1s;
+  }
+  #tip.show { opacity: 1; }
+  #tip .t { font-weight: 650; font-size: 13px; margin-bottom: 6px; }
+  #tip .r { display: flex; align-items: center; gap: 8px; justify-content: space-between; font-variant-numeric: tabular-nums; }
+  #tip .r .k { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+  #tip .r.tot { border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 4px; font-weight: 650; }
+  #tip .r.tot .k { color: var(--ink); }
+  #tip .note { color: var(--muted); margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid2 { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 420px) {
+    .kpi .value { font-size: 21px; }
+    .flabel { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>매출 대시보드 2026</h1>
+      <div class="meta">[교육용 더미] 매출 데이터 2026 · 2026년 1–10월 · 제품 5종 · 채널 4곳</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="themeBtn" type="button">다크 모드</button>
+      <button class="btn" id="resetBtn" type="button">필터 초기화</button>
+    </div>
+  </header>
+
+  <section class="card filters" aria-label="필터">
+    <div class="frow"><span class="flabel">월</span><div class="frow" id="fMonth"></div></div>
+    <div class="frow"><span class="flabel">제품</span><div class="frow" id="fProduct"></div></div>
+    <div class="frow"><span class="flabel">채널</span><div class="frow" id="fChannel"></div></div>
+    <div class="frow" style="justify-content:space-between">
+      <div class="frow">
+        <span class="flabel">지표</span>
+        <div class="seg" id="fMetric">
+          <button type="button" data-v="rev" aria-pressed="true">매출</button>
+          <button type="button" data-v="qty" aria-pressed="false">판매수량</button>
+        </div>
+      </div>
+      <div class="summary" id="summary"></div>
+    </div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="핵심 지표"></section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 id="monthTitle">월별 매출</h2>
+      <div class="frow">
+        <span class="hint">막대를 클릭하면 그 달만 봅니다</span>
+        <div class="seg" id="fStack">
+          <button type="button" data-v="channel" aria-pressed="true">채널별</button>
+          <button type="button" data-v="product" aria-pressed="false">제품별</button>
+        </div>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div id="monthChart"></div>
+    <details>
+      <summary>표로 보기</summary>
+      <div class="table-wrap" id="monthTable"></div>
+    </details>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="card-head"><h2 id="prodTitle">제품별 매출</h2><span class="hint">클릭해서 필터</span></div>
+      <div class="hbars" id="prodBars"></div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2 id="chanTitle">채널별 매출</h2><span class="hint">클릭해서 필터</span></div>
+      <div class="hbars" id="chanBars"></div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:12px">
+    <div class="card-head"><h2 id="pivotTitle">제품 × 채널 매출</h2><span class="hint" id="pivotHint"></span></div>
+    <div class="table-wrap" id="pivot"></div>
+  </section>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+// ---- 데이터 (구글 시트 A1:G201 그대로) ----
+const MONTHS = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10'];
+const PRODUCTS = [
+  { name: '데일리 선크림', price: 19000 },
+  { name: '진정 시카 앰플', price: 24000 },
+  { name: '수분 장벽 크림', price: 28000 },
+  { name: '에센셜 마스크팩(10매)', price: 15000 },
+  { name: '약산성 클렌징폼', price: 12000 },
+];
+const CHANNELS = ['올리브영', '자사몰', '쿠팡', '아마존(해외)'];
+// 시트 행 순서: 월 → 제품 → 채널
+const QTY = [439,209,330,237,600,300,487,404,587,323,502,351,795,324,521,422,746,369,497,371,566,242,365,305,595,318,456,388,650,267,426,439,921,394,627,537,715,371,528,481,741,405,496,578,664,292,373,342,506,246,314,303,844,391,546,595,733,308,425,389,968,554,710,835,680,261,503,396,406,204,260,235,737,415,591,489,691,347,513,466,1416,590,958,1103,662,308,422,434,328,121,221,247,751,396,594,552,747,348,480,587,1812,647,1025,1108,520,281,386,473,307,117,170,189,905,329,642,595,718,279,520,584,1657,874,1148,1216,623,323,395,546,310,139,200,191,878,391,634,623,668,353,501,627,1506,771,1230,1333,670,296,505,486,309,135,210,222,964,455,651,734,829,314,505,608,1133,424,672,791,637,235,466,451,425,200,345,369,888,307,638,768,739,354,537,616,773,317,541,668,573,321,376,536,655,277,432,436,776,376,528,675,772,340,530,558];
+const DISC = [20,10,20,0,0,10,0,5,0,0,0,15,5,5,20,5,0,10,10,0,10,10,0,0,0,0,15,0,0,10,20,10,20,5,10,0,20,0,10,0,0,10,15,10,20,5,0,5,5,0,20,15,15,0,0,20,5,10,20,0,20,0,5,20,10,5,5,5,0,10,0,0,10,0,0,15,20,0,20,15,15,10,5,5,20,5,20,10,10,5,0,5,20,0,20,0,10,10,10,10,20,5,5,5,20,5,20,15,5,10,10,5,5,10,0,15,0,10,15,10,15,10,10,15,0,0,20,10,15,5,0,0,10,5,0,20,15,0,15,15,15,10,10,0,15,5,15,20,0,10,0,10,15,5,10,0,0,0,20,0,0,0,10,0,15,0,20,0,10,5,0,0,10,5,0,0,10,10,10,0,5,5,0,10,0,5,0,0,0,10,10,15,10,5,20,0,20,10,10,15];
+const REV = [6672800,3573900,5016000,4503000,14400000,6480000,11688000,9211200,16436000,9044000,14056000,8353800,11328750,4617000,6252000,6013500,8952000,3985200,5367600,4452000,9678600,4138200,6935000,5795000,14280000,7632000,9302400,9312000,18200000,6728400,9542400,11062800,11052000,5614500,8464500,8055000,6864000,4452000,5702400,5772000,14079000,6925500,8010400,9883800,12748800,6657600,8952000,7797600,13459600,6888000,7033600,7211400,10761000,5865000,8190000,7140000,8356200,3326400,4080000,4668000,14713600,10526000,12815500,12692000,14688000,5950800,11468400,9028800,11368000,5140800,7280000,6580000,9949500,6225000,8865000,6234750,6633600,4164000,4924800,4753200,22868400,10089000,17291900,19909150,12710400,7022400,8102400,9374400,8265600,3218600,6188000,6570200,9012000,5940000,7128000,8280000,8067600,3758400,5184000,6339600,27542400,11678350,18501250,19999400,9984000,6406800,7411200,9649200,8166200,2948400,4284000,5027400,12896250,4441500,9630000,7586250,8616000,3013200,5304000,6307200,26760550,14945400,19630800,19638400,14952000,7752000,7584000,11793600,7378000,3697400,5600000,5348000,11853000,5571750,9510000,7476000,6813600,4236000,5110200,6395400,24321900,13184100,21033000,25327000,13668000,6748800,10302000,9331200,8652000,3402000,5880000,5594400,12291000,6483750,8788500,11010000,9948000,3768000,4848000,7296000,21527000,8056000,11491200,15029000,12994800,5640000,8947200,10824000,10710000,5320000,9660000,10332000,11988000,4374750,9570000,11520000,7981200,3823200,5799600,7392000,13952650,5721850,10279000,11422800,13752000,7318800,9024000,12864000,18340000,6980400,10886400,10376800,10476000,5358000,6336000,10125000,7411200,3672000,5724000,5691600];
+
+const ROWS = [];
+{
+  let i = 0;
+  for (let m = 0; m < MONTHS.length; m++)
+    for (let p = 0; p < PRODUCTS.length; p++)
+      for (let c = 0; c < CHANNELS.length; c++, i++)
+        ROWS.push({ m, p, c, qty: QTY[i], disc: DISC[i], rev: REV[i], list: QTY[i] * PRODUCTS[p].price });
+}
+
+// ---- 상태 ----
+const all = n => new Set(Array.from({ length: n }, (_, i) => i));
+const state = {
+  months: all(MONTHS.length),
+  products: all(PRODUCTS.length),
+  channels: all(CHANNELS.length),
+  metric: 'rev',
+  stack: 'channel',
+};
+const KEY = { months: MONTHS.length, products: PRODUCTS.length, channels: CHANNELS.length };
+
+// 모두 선택 상태에서 클릭 → 그것만 / 그 외엔 토글 / 비면 전체로
+function pick(dim, i) {
+  const s = state[dim], n = KEY[dim];
+  if (s.size === n) { state[dim] = new Set([i]); }
+  else {
+    if (s.has(i)) s.delete(i); else s.add(i);
+    if (s.size === 0) state[dim] = all(n);
+  }
+  render();
+}
+
+// ---- 포맷 ----
+const nf = new Intl.NumberFormat('ko-KR');
+const full = n => nf.format(Math.round(n));
+const trim = s => s.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+function short(n) {
+  if (state.metric === 'qty') return n >= 10000 ? trim((n / 10000).toFixed(1)) + '만' : full(n);
+  if (n >= 1e8) return trim((n / 1e8).toFixed(2)) + '억';
+  if (n >= 1e4) return full(n / 1e4) + '만';
+  return full(n);
+}
+const unit = () => state.metric === 'qty' ? '개' : '원';
+const mLabel = i => (+MONTHS[i].slice(5)) + '월';
+const metricName = () => state.metric === 'qty' ? '판매수량' : '매출';
+
+function sum(rows) {
+  let rev = 0, qty = 0, list = 0;
+  for (const r of rows) { rev += r.rev; qty += r.qty; list += r.list; }
+  return { rev, qty, list };
+}
+const val = r => state.metric === 'qty' ? r.qty : r.rev;
+
+// ---- 툴팁 ----
+const tip = document.getElementById('tip');
+function showTip(html, e) {
+  tip.innerHTML = html;
+  tip.classList.add('show');
+  moveTip(e);
+}
+function moveTip(e) {
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top = Math.max(8, y) + 'px';
+}
+const hideTip = () => tip.classList.remove('show');
+
+// ---- 필터 칩 ----
+function chips(el, labels, dim) {
+  el.innerHTML = labels.map((l, i) =>
+    `<button type="button" class="chip" data-i="${i}" aria-pressed="false">${l}</button>`).join('');
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (b) pick(dim, +b.dataset.i);
+  });
+}
+chips(document.getElementById('fMonth'), MONTHS.map((_, i) => mLabel(i)), 'months');
+chips(document.getElementById('fProduct'), PRODUCTS.map(p => p.name), 'products');
+chips(document.getElementById('fChannel'), CHANNELS, 'channels');
+
+function seg(el, key) {
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[key] = b.dataset.v; render();
+  });
+}
+seg(document.getElementById('fMetric'), 'metric');
+seg(document.getElementById('fStack'), 'stack');
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state.months = all(MONTHS.length); state.products = all(PRODUCTS.length); state.channels = all(CHANNELS.length);
+  render();
+});
+
+// 테마 토글
+const themeBtn = document.getElementById('themeBtn');
+function isDark() {
+  const t = document.documentElement.dataset.theme;
+  return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function syncThemeBtn() { themeBtn.textContent = isDark() ? '라이트 모드' : '다크 모드'; }
+themeBtn.addEventListener('click', () => {
+  const next = isDark() ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('dash-theme', next); } catch (e) {}
+  syncThemeBtn();
+});
+try { const t = localStorage.getItem('dash-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+syncThemeBtn();
+
+// ---- 렌더 ----
+function render() {
+  const { months, products, channels } = state;
+  const inM = r => months.has(r.m), inP = r => products.has(r.p), inC = r => channels.has(r.c);
+  const filtered = ROWS.filter(r => inM(r) && inP(r) && inC(r));
+
+  // 칩/세그먼트 상태
+  const syncChips = (id, set, n) => document.querySelectorAll(`#${id} .chip`).forEach(b =>
+    b.setAttribute('aria-pressed', set.size < n && set.has(+b.dataset.i) ? 'true' : 'false'));
+  syncChips('fMonth', months, MONTHS.length);
+  syncChips('fProduct', products, PRODUCTS.length);
+  syncChips('fChannel', channels, CHANNELS.length);
+  document.querySelectorAll('#fMetric button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.metric));
+  document.querySelectorAll('#fStack button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.stack));
+
+  const desc = (set, n, names, allTxt) => set.size === n ? allTxt : [...set].sort((a, b) => a - b).map(i => names[i]).join(', ');
+  document.getElementById('summary').innerHTML =
+    `<b>${desc(months, MONTHS.length, MONTHS.map((_, i) => mLabel(i)), '전체 기간')}</b> · ` +
+    `<b>${desc(products, PRODUCTS.length, PRODUCTS.map(p => p.name), '전체 제품')}</b> · ` +
+    `<b>${desc(channels, CHANNELS.length, CHANNELS, '전체 채널')}</b>`;
+
+  renderKpis(filtered);
+  renderMonthly(ROWS.filter(r => inP(r) && inC(r)));
+  renderHBars('prodBars', 'products', PRODUCTS.map(p => p.name), ROWS.filter(r => inM(r) && inC(r)), r => r.p);
+  renderHBars('chanBars', 'channels', CHANNELS, ROWS.filter(r => inM(r) && inP(r)), r => r.c);
+  renderPivot(filtered);
+
+  const mn = metricName();
+  document.getElementById('monthTitle').textContent = `월별 ${mn}`;
+  document.getElementById('prodTitle').textContent = `제품별 ${mn}`;
+  document.getElementById('chanTitle').textContent = `채널별 ${mn}`;
+  document.getElementById('pivotTitle').textContent = `제품 × 채널 ${mn}`;
+  document.getElementById('pivotHint').textContent = `단위: ${unit()} · 선택한 필터 기준`;
+}
+
+function renderKpis(rows) {
+  const s = sum(rows);
+  const avgPrice = s.qty ? s.rev / s.qty : 0;
+  const discRate = s.list ? (1 - s.rev / s.list) * 100 : 0;
+  const tiles = [
+    { label: '매출 합계', value: short(s.rev).replace(/(만|억)$/, '<small>$1원</small>').replace(/^([\d,]+)$/, '$1<small>원</small>'), sub: full(s.rev) + '원' },
+    { label: '판매수량 합계', value: full(s.qty) + '<small>개</small>', sub: `${rows.length}건 집계` },
+    { label: '평균 판매단가', value: full(avgPrice) + '<small>원</small>', sub: '매출 ÷ 판매수량' },
+    { label: '실질 할인율', value: discRate.toFixed(1) + '<small>%</small>', sub: `정가 기준 ${full(s.list - s.rev)}원 할인` },
+  ];
+  // KPI 매출은 항상 원 단위로
+  const revShort = (n => n >= 1e8 ? trim((n / 1e8).toFixed(2)) + '<small>억원</small>' : full(n / 1e4) + '<small>만원</small>')(s.rev);
+  tiles[0].value = revShort;
+  document.getElementById('kpis').innerHTML = tiles.map(t =>
+    `<div class="card kpi"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="sub">${t.sub}</div></div>`).join('');
+}
+
+function niceTicks(max, count = 4) {
+  if (max <= 0) return [0, 1];
+  const raw = max / count, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+  const ticks = [];
+  for (let v = 0; v <= Math.ceil(max / step) * step + step * 1e-6; v += step) ticks.push(v);
+  return ticks;
+}
+
+function roundTop(x, y, w, h, r) {
+  r = Math.min(r, h, w / 2);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+function renderMonthly(rows) {
+  const byProduct = state.stack === 'product';
+  const keys = byProduct ? PRODUCTS.map(p => p.name) : CHANNELS;
+  const active = byProduct ? state.products : state.channels;
+  const series = keys.map((k, i) => ({ k, i, color: `var(--s${i + 1})` })).filter(s => active.has(s.i));
+
+  document.getElementById('legend').innerHTML = series.map(s =>
+    `<span><i class="sw" style="background:${s.color}"></i>${s.k}</span>`).join('');
+
+  // 월 × 시리즈 값
+  const data = MONTHS.map(() => keys.map(() => 0));
+  for (const r of rows) data[r.m][byProduct ? r.p : r.c] += val(r);
+  const totals = data.map(d => series.reduce((a, s) => a + d[s.i], 0));
+
+  const el = document.getElementById('monthChart');
+  const W = Math.max(320, el.clientWidth || 800), H = W < 560 ? 240 : 300;
+  const m = { l: 52, r: 8, t: 22, b: 26 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const ticks = niceTicks(Math.max(...totals));
+  const top = ticks[ticks.length - 1];
+  const y = v => m.t + ih - (v / top) * ih;
+  const band = iw / MONTHS.length, bw = Math.min(46, band * 0.62);
+  const GAP = 2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="월별 ${metricName()} 누적 막대 차트">`;
+  for (const t of ticks) {
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? 'var(--axis)' : 'var(--grid)'}" stroke-width="1"/>`;
+    svg += `<text class="tick" x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${t === 0 ? '0' : short(t)}</text>`;
+  }
+  MONTHS.forEach((_, mi) => {
+    const cx = m.l + band * mi + band / 2, x = cx - bw / 2;
+    const dim = !state.months.has(mi);
+    let acc = 0;
+    const visible = series.filter(s => data[mi][s.i] > 0);
+    svg += `<g opacity="${dim ? 0.3 : 1}">`;
+    visible.forEach((s, j) => {
+      const v = data[mi][s.i];
+      const y0 = y(acc), y1 = y(acc + v);
+      // 맨 위 조각: 둥근 윗면 / 그 아래 조각: 위쪽에 2px 간격
+      if (j === visible.length - 1) svg += `<path d="${roundTop(x, y1, bw, Math.max(0.5, y0 - y1), 4)}" fill="${s.color}"/>`;
+      else svg += `<rect x="${x}" y="${y1 + GAP}" width="${bw}" height="${Math.max(0.5, y0 - y1 - GAP)}" fill="${s.color}"/>`;
+      acc += v;
+    });
+    svg += `</g>`;
+    if (totals[mi] > 0)
+      svg += `<text class="tick" x="${cx}" y="${y(totals[mi]) - 6}" text-anchor="middle" opacity="${dim ? 0.5 : 1}" style="fill:var(--ink-2)">${short(totals[mi])}</text>`;
+    svg += `<text class="tick" x="${cx}" y="${H - 6}" text-anchor="middle" style="${state.months.has(mi) && state.months.size < MONTHS.length ? 'fill:var(--ink);font-weight:650' : ''}">${mLabel(mi)}</text>`;
+    svg += `<rect class="hit" data-m="${mi}" x="${m.l + band * mi}" y="${m.t}" width="${band}" height="${ih}" fill="transparent"/>`;
+  });
+  svg += `</svg>`;
+  el.innerHTML = svg;
+
+  el.querySelectorAll('.hit').forEach(h => {
+    const mi = +h.dataset.m;
+    h.addEventListener('click', () => { hideTip(); pick('months', mi); });
+    h.addEventListener('mousemove', e => {
+      const prev = mi > 0 ? totals[mi - 1] : null;
+      const chg = prev ? ((totals[mi] - prev) / prev) * 100 : null;
+      const rowsHtml = series.slice().reverse().map(s =>
+        `<div class="r"><span class="k"><i class="sw" style="background:${s.color}"></i>${s.k}</span><span>${full(data[mi][s.i])}</span></div>`).join('');
+      showTip(`<div class="t">${MONTHS[mi].replace('-', '년 ')}월 ${metricName()}</div>${rowsHtml}
+        <div class="r tot"><span class="k">합계</span><span>${full(totals[mi])}${unit()}</span></div>
+        ${chg !== null ? `<div class="note">전월 대비 ${chg >= 0 ? '▲' : '▼'} ${Math.abs(chg).toFixed(1)}%</div>` : ''}
+        <div class="note">클릭: ${state.months.size === 1 && state.months.has(mi) ? '전체 기간으로' : '이 달로 필터'}</div>`, e);
+    });
+    h.addEventListener('mouseleave', hideTip);
+  });
+
+  // 표
+  document.getElementById('monthTable').innerHTML =
+    `<table><thead><tr><th>월</th>${series.map(s => `<th>${s.k}</th>`).join('')}<th>합계</th></tr></thead><tbody>` +
+    MONTHS.map((_, mi) => `<tr><td>${mLabel(mi)}</td>${series.map(s => `<td>${full(data[mi][s.i])}</td>`).join('')}<td class="total">${full(totals[mi])}</td></tr>`).join('') +
+    `</tbody></table>`;
+}
+
+function renderHBars(id, dim, names, rows, keyOf) {
+  const vals = names.map(() => 0), qtys = names.map(() => 0), revs = names.map(() => 0);
+  for (const r of rows) { const k = keyOf(r); vals[k] += val(r); qtys[k] += r.qty; revs[k] += r.rev; }
+  const set = state[dim], n = names.length;
+  const selTotal = vals.reduce((a, v, i) => a + (set.has(i) ? v : 0), 0);
+  const max = Math.max(...vals, 1);
+  const order = names.map((_, i) => i).sort((a, b) => vals[b] - vals[a]);
+  const el = document.getElementById(id);
+  el.innerHTML = order.map(i => {
+    const on = set.size < n && set.has(i), off = set.size < n && !set.has(i);
+    const pct = set.has(i) && selTotal ? (vals[i] / selTotal * 100).toFixed(1) + '%' : '';
+    return `<button type="button" class="hrow${on ? ' on' : ''}${off ? ' off' : ''}" data-i="${i}" aria-pressed="${on}">
+      <span class="name">${names[i]}</span>
+      <span class="track"><span class="fill" style="width:${(vals[i] / max * 100).toFixed(2)}%"></span></span>
+      <span class="val">${short(vals[i])}<span class="pct">${pct}</span></span>
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.hrow').forEach(b => {
+    const i = +b.dataset.i;
+    b.addEventListener('click', () => { hideTip(); pick(dim, i); });
+    b.addEventListener('mousemove', e => showTip(`<div class="t">${names[i]}</div>
+      <div class="r"><span class="k">매출</span><span>${full(revs[i])}원</span></div>
+      <div class="r"><span class="k">판매수량</span><span>${full(qtys[i])}개</span></div>
+      <div class="r"><span class="k">평균 판매단가</span><span>${qtys[i] ? full(revs[i] / qtys[i]) : 0}원</span></div>
+      <div class="note">클릭: ${set.size === 1 && set.has(i) ? '전체로 되돌리기' : set.size === n ? '이것만 보기' : set.has(i) ? '선택 해제' : '선택에 추가'}</div>`, e));
+    b.addEventListener('mouseleave', hideTip);
+  });
+}
+
+function renderPivot(rows) {
+  const P = [...state.products].sort((a, b) => a - b), C = [...state.channels].sort((a, b) => a - b);
+  const cell = PRODUCTS.map(() => CHANNELS.map(() => 0));
+  for (const r of rows) cell[r.p][r.c] += val(r);
+  const rowT = p => C.reduce((a, c) => a + cell[p][c], 0);
+  const colT = c => P.reduce((a, p) => a + cell[p][c], 0);
+  const grand = P.reduce((a, p) => a + rowT(p), 0);
+  const td = v => `<td class="${v ? '' : 'zero'}">${full(v)}</td>`;
+  document.getElementById('pivot').innerHTML =
+    `<table><thead><tr><th>제품</th>${C.map(c => `<th>${CHANNELS[c]}</th>`).join('')}<th>합계</th><th>비중</th></tr></thead><tbody>` +
+    P.map(p => `<tr><td>${PRODUCTS[p].name}</td>${C.map(c => td(cell[p][c])).join('')}<td class="total">${full(rowT(p))}</td><td>${grand ? (rowT(p) / grand * 100).toFixed(1) : '0.0'}%</td></tr>`).join('') +
+    `</tbody><tfoot><tr><td>합계</td>${C.map(c => `<td>${full(colT(c))}</td>`).join('')}<td>${full(grand)}</td><td>100%</td></tr></tfoot></table>`;
+}
+
+let rT;
+new ResizeObserver(() => { clearTimeout(rT); rT = setTimeout(render, 60); }).observe(document.getElementById('monthChart'));
+render();
+</script>
+</body>
+</html>
